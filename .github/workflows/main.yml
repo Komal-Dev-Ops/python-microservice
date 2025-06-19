@@ -6,11 +6,11 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: linux
 
     env:
       AWS_REGION: us-east-1
-      ECR_REPO: 123456789012.dkr.ecr.us-east-1.amazonaws.com/python-microservice
+      ECR_REPO: 677276102736.dkr.ecr.us-east-1.amazonaws.com/komal
       IMAGE_TAG: ${{ github.run_number }}
 
     steps:
