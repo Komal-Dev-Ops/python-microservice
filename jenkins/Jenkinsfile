@@ -1,0 +1,47 @@
+pipeline {
+  agent any
+
+  environment {
+    ECR_REPO = '123456789012.dkr.ecr.us-east-1.amazonaws.com/python-microservice'
+    IMAGE_TAG = "${env.BUILD_NUMBER}"
+    AWS_REGION = 'us-east-1'
+  }
+
+  stages {
+    stage('Clone Code') {
+      steps {
+        git url: 'https://github.com/your-username/python-microservice.git'
+      }
+    }
+
+    stage('Build Docker Image') {
+      steps {
+        script {
+          docker.build("$ECR_REPO:$IMAGE_TAG")
+        }
+      }
+    }
+
+    stage('Push to ECR') {
+      steps {
+        script {
+          sh 'aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO'
+          sh 'docker push $ECR_REPO:$IMAGE_TAG'
+        }
+      }
+    }
+    stage('Deploy to EC2') {
+      steps {
+        sshagent(['ec2-ssh-credentials']) {
+          sh 'ssh ec2-user@<EC2-PUBLIC-IP> "docker pull $ECR_REPO:$IMAGE_TAG && docker stop app || true && docker rm app || true && docker run -d --name app -p 80:5000 $ECR_REPO:$IMAGE_TAG"'
+        }
+      }
+    }
+
+    stage('Slack Notification') {
+      steps {
+        slackSend(channel: '#deployments', message: "Deployed build #$BUILD_NUMBER to EC2 successfully!", color: '#00FF00')
+      }
+    }
+  }
+}
